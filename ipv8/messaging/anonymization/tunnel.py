@@ -371,7 +371,7 @@ class IntroductionPoint(object):
 
 class Swarm(object):
 
-    def __init__(self, info_hash, hops, seeder_sk=None, max_ip_age=300):
+    def __init__(self, info_hash, hops, seeder_sk=None, max_ip_age=180):
         self.info_hash = info_hash
         self.hops = hops
         self.seeder_sk = seeder_sk
@@ -413,16 +413,18 @@ class Swarm(object):
 
     def add_intro_point(self, ip):
         old_ip = next((i for i in self.intro_points if i == ip), None)
+
         if old_ip:
             old_ip.last_seen = time.time()
         else:
             self.intro_points.append(ip)
 
+        return old_ip or ip
+
+    def remove_old_intro_points(self):
         # Cleanup old introduction points
         now = time.time()
         self.intro_points = [i for i in self.intro_points if i.last_seen + self.max_ip_age >= now]
-
-        return old_ip or ip
 
     def remove_intro_point(self, ip):
         try:

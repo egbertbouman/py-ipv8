@@ -18,8 +18,8 @@ from .caches import *
 from .community import TunnelCommunity, message_to_payload, tc_lazy_wrapper_unsigned
 from .payload import *
 from .tunnel import (CIRCUIT_ID_PORT, CIRCUIT_TYPE_IP_SEEDER, CIRCUIT_TYPE_RP_DOWNLOADER, CIRCUIT_TYPE_RP_SEEDER,
-                     EXIT_NODE, EXIT_NODE_SALT, Hop, IntroductionPoint, PEER_SOURCE_PEX, RelayRoute, RendezvousPoint,
-                     Swarm, TunnelExitSocket)
+                     EXIT_NODE, EXIT_NODE_SALT, Hop, IntroductionPoint, PEER_SOURCE_DHT, PEER_SOURCE_PEX, RelayRoute,
+                     RendezvousPoint, Swarm, TunnelExitSocket)
 from ...keyvault.public.libnaclkey import LibNaCLPK
 from ...messaging.anonymization.pex import PexCommunity, PexEndpointAdapter
 from ...messaging.deprecated.encoding import decode, encode
@@ -180,15 +180,19 @@ class HiddenTunnelCommunity(TunnelCommunity):
     @inlineCallbacks
     def do_peer_discovery(self):
         now = time.time()
-        for info_hash, swarm in self.swarms.items():
+        for info_hash, swarm in list(self.swarms.items()):
             if not swarm.seeding and swarm.last_lookup + self.settings.swarm_lookup_interval <= now \
                and swarm.get_num_connections() < self.settings.swarm_connection_limit:
+                swarm.remove_old_intro_points()
                 swarm.last_lookup = now
                 ips = yield self.send_peers_request(info_hash, swarm).addErrback(lambda _: None)
                 if ips is None:
                     self.logger.info('Failed to do peer discovery for swarm %s', binascii.hexlify(info_hash))
                     continue
-                self.logger.info('Found %d peer(s) for swarm %s', len(ips), binascii.hexlify(info_hash))
+                self.logger.info('Found %d/%d peer(s) for swarm %s',
+                                 len([ip for ip in ips if ip.source == PEER_SOURCE_DHT]),
+                                 len([ip for ip in ips if ip.source == PEER_SOURCE_PEX]),
+                                 binascii.hexlify(info_hash))
                 for ip in set(ips):
                     ip = swarm.add_intro_point(ip)
                     if not swarm.has_connection(ip.seeder_pk):
@@ -277,7 +281,6 @@ class HiddenTunnelCommunity(TunnelCommunity):
             return fail(Failure(RuntimeError("No circuit for peers-request")))
 
         # Send a peers-request message over this circuit
-        self.logger.info("Sending peers request")
         cache = self.request_cache.add(PeersRequestCache(self, circuit, info_hash))
         payload = PeersRequestPayload(circuit.circuit_id, cache.number, info_hash)
 
@@ -286,8 +289,10 @@ class HiddenTunnelCommunity(TunnelCommunity):
         ip = intro_point or swarm.get_random_intro_point()
         if ip and ip.peer.public_key != circuit.hops[-1].public_key:
             self.tunnel_data(circuit, ip.peer.address, u"peers-request", payload)
+            self.logger.info("Sending peers request (intro point %s)", str(ip))
         else:
             self.send_cell([circuit.peer], u"peers-request", payload)
+            self.logger.info("Sending peers request as cell")
         return cache.deferred
 
     @tc_lazy_wrapper_unsigned(PeersRequestPayload)
