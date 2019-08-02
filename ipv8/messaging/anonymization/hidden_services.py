@@ -184,7 +184,6 @@ class HiddenTunnelCommunity(TunnelCommunity):
             if not swarm.seeding and swarm.last_lookup + self.settings.swarm_lookup_interval <= now \
                and swarm.get_num_connections() < self.settings.swarm_connection_limit:
                 swarm.remove_old_intro_points()
-                swarm.last_lookup = now
                 ips = yield self.send_peers_request(info_hash, swarm).addErrback(lambda _: None)
                 if ips is None:
                     self.logger.info('Failed to do peer discovery for swarm %s', binascii.hexlify(info_hash))
@@ -286,7 +285,7 @@ class HiddenTunnelCommunity(TunnelCommunity):
 
         # Ask an introduction point if available (in which case we'll use PEX), otherwise let
         # the exit node do a DHT request.
-        ip = intro_point or swarm.get_random_intro_point()
+        ip = intro_point or swarm.get_next_lookup_target()
         if ip and ip.peer.public_key != circuit.hops[-1].public_key:
             self.tunnel_data(circuit, ip.peer.address, u"peers-request", payload)
             self.logger.info("Sending peers request (intro point %s)", str(ip))

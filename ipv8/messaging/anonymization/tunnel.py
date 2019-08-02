@@ -371,16 +371,22 @@ class IntroductionPoint(object):
 
 class Swarm(object):
 
-    def __init__(self, info_hash, hops, seeder_sk=None, max_ip_age=180):
+    def __init__(self, info_hash, hops, seeder_sk=None, max_ip_age=180, forced_dht_lookup_interval=300):
         self.info_hash = info_hash
         self.hops = hops
         self.seeder_sk = seeder_sk
         self.max_ip_age = max_ip_age
+        self.forced_dht_lookup_interval = forced_dht_lookup_interval
 
         self.intro_points = []
         self.connections = {}
-        self.last_lookup = 0
+        self.last_lookup_pex = 0
+        self.last_lookup_dht = 0
         self.transfer_history = [0, 0]
+
+    @property
+    def last_lookup(self):
+        return max(self.last_lookup_dht, self.last_lookup_pex)
 
     @property
     def seeding(self):
@@ -432,8 +438,18 @@ class Swarm(object):
         except ValueError:
             pass
 
-    def get_random_intro_point(self):
-        return random.choice(self.intro_points) if self.intro_points else None
+    def get_next_lookup_target(self):
+        target = None
+        now = time.time()
+        if (now - self.last_lookup_dht) < self.forced_dht_lookup_interval:
+            target = random.choice(self.intro_points) if self.intro_points else None
+
+        if target is None:
+            self.last_lookup_dht = now
+        else:
+            self.last_lookup_pex = now
+
+        return target
 
     def get_num_seeders(self):
         seeder_pks = {ip.seeder_pk for ip in self.intro_points}
