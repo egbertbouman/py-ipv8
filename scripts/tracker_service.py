@@ -7,7 +7,7 @@ import signal
 import ssl
 import time
 import traceback
-from asyncio import ensure_future, get_event_loop
+from asyncio import ensure_future, get_event_loop, Event
 from binascii import hexlify
 
 from aiohttp import web
@@ -168,6 +168,7 @@ class TrackerService:
         """
         self.endpoint = None
         self.stopping = False
+        self.stopped = Event()
         self.overlay = None
         self.site = None
 
@@ -190,7 +191,8 @@ class TrackerService:
                 self.endpoint.close()
                 if self.site:
                     await self.site.stop()
-                get_event_loop().stop()
+                self.stopped.set()
+                print("Shutdown completed")
 
         signal.signal(signal.SIGINT, lambda sig, _: ensure_future(signal_handler(sig)))
         signal.signal(signal.SIGTERM, lambda sig, _: ensure_future(signal_handler(sig)))
