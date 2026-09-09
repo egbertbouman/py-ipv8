@@ -48,8 +48,7 @@ class OverlaysEndpoint(BaseEndpoint[IPv8]):
         Initialize this endpoint for the given session instance.
         """
         super().initialize(session)
-        self.statistics_supported = isinstance(session.endpoint, StatisticsEndpoint) \
-            or isinstance(getattr(session.endpoint, "endpoint", None), StatisticsEndpoint)
+        self.statistics_supported = True
 
     def get_communities(self) -> Generator[Community]:
         """
@@ -131,7 +130,7 @@ class OverlaysEndpoint(BaseEndpoint[IPv8]):
                 else {},
                 overlay,
             )
-        } for overlay in self.get_communities() if isinstance(self.session.endpoint, StatisticsEndpoint)]})
+        } for overlay in self.get_communities()]})
 
     def statistics_by_name(self, statistics: dict[int, NetworkStat],
                            overlay: Community) -> dict[str, dict[str, int | float]]:

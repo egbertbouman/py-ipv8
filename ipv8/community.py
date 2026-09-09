@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, cast
 from typing_extensions import Self
 
 from .lazy_community import EZPackOverlay, lazy_wrapper, lazy_wrapper_unsigned
-from .messaging.anonymization.endpoint import TunnelEndpoint
+# from .messaging.anonymization.endpoint import TunnelEndpoint
 from .messaging.interfaces.dispatcher.endpoint import FAST_ADDR_TO_INTERFACE, INTERFACES
 from .messaging.interfaces.udp.endpoint import Address, UDPv4Address, UDPv4LANAddress, UDPv6Address
 from .messaging.payload import (
@@ -300,8 +300,9 @@ class Community(EZPackOverlay):
                                                  supports_new_style=new_style)
         auth = BinMemberAuthenticationPayload(self.my_peer.public_key.key_to_bin())
         dist = GlobalTimeDistributionPayload(global_time)
-
-        return self._ez_pack(prefix or self._prefix, payload.msg_id, [auth, dist, payload])
+        packet = self._ez_pack(prefix or self._prefix, payload.msg_id, [auth, dist, payload])
+        # print(">>>>>>>", packet)
+        return packet
 
     def create_introduction_response(self, lan_socket_address: Address,  # noqa: PLR0913
                                      socket_address: Address, identifier: int, introduction: Peer | None = None,

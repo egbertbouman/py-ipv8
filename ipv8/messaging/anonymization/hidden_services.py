@@ -64,7 +64,6 @@ if TYPE_CHECKING:
 
     from ipv8_service import IPv8
 
-    from ...keyvault.keys import PrivateKey
     from ..interfaces.udp.endpoint import Address
     from ..lazy_payload import VariablePayloadWID
 
@@ -494,7 +493,7 @@ class HiddenTunnelCommunity(TunnelCommunity):
         rp_info_bin = self.serializer.pack("payload", rp_info)
         rp_info_enc = sesskeys.encrypt_str(rp_info_bin, FORWARD)
 
-        self.circuits.get(rp.circuit.circuit_id)  # Needed for notifying the Rust Endpoint
+        self.circuits.get(rp.circuit.circuit_id)  # Needed for notifying the RustEndpoint
         circuit = self.circuits[cast("int", circuit_id)]
         self.tunnel_data(circuit, source_address, CreatedE2EPayload(payload.identifier, y, auth, rp_info_enc))
 
@@ -508,7 +507,7 @@ class HiddenTunnelCommunity(TunnelCommunity):
             return
 
         cache = self.request_cache.pop(E2ERequestCache, payload.identifier)
-        shared_secret = self.crypto.verify_and_generate_shared_secret(cast("PrivateKey", cache.hop.dh_secret),
+        shared_secret = self.crypto.verify_and_generate_shared_secret(cache.hop.dh_secret,
                                                                       payload.key,
                                                                       payload.auth,
                                                                       cache.hop.public_key.get_crypt_pk())
@@ -605,7 +604,7 @@ class HiddenTunnelCommunity(TunnelCommunity):
 
         if circuit and await circuit.ready:
             # We got a circuit, now let's create an introduction point
-            seed_pk = cast("PrivateKey", self.swarms[info_hash].seeder_sk).pub().key_to_bin()
+            seed_pk = self.swarms[info_hash].seeder_sk.pub().key_to_bin()
             circuit_id = circuit.circuit_id
             cache = IPRequestCache(self, circuit)
             self.request_cache.add(cache)

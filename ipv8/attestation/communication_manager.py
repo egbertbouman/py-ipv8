@@ -7,7 +7,7 @@ import os
 from typing import TYPE_CHECKING, cast
 
 from ..keyvault.crypto import ECCrypto
-from ..messaging.anonymization.hidden_services import HiddenTunnelCommunity
+from ..messaging.anonymization.community import TunnelCommunity
 from ..peer import Peer
 from ..util import succeed
 from .identity.community import IdentityCommunity, create_community
@@ -331,7 +331,7 @@ class CommunicationManager:
 
         public_key = private_key.pub().key_to_bin()
         if public_key not in self.channels:
-            tunnel_community = self.ipv8_instance.get_overlay(HiddenTunnelCommunity)
+            tunnel_community = self.ipv8_instance.get_overlay(TunnelCommunity)
             decoded_rendezvous_token = (base64.b64decode(rendezvous_token.encode())
                                         if rendezvous_token is not None else None)
             identity_overlay = await create_community(private_key, self.ipv8_instance, self.lazy_identity_manager(),

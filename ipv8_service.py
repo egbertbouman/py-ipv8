@@ -33,8 +33,7 @@ else:
         from ipv8.community import Community
         from ipv8.keyvault.crypto import default_eccrypto as crypto
         from ipv8.messaging.anonymization.community import TunnelCommunity
-        from ipv8.messaging.anonymization.endpoint import TunnelEndpoint
-        from ipv8.messaging.anonymization.hidden_services import HiddenTunnelCommunity
+        # from ipv8.messaging.anonymization.endpoint import TunnelEndpoint
         from ipv8.messaging.interfaces.dispatcher.endpoint import DispatcherEndpoint
         from ipv8.messaging.interfaces.udp.endpoint import UDPEndpoint
         from ipv8.overlay import Overlay
@@ -54,7 +53,6 @@ else:
         from .ipv8.keyvault.crypto import default_eccrypto as crypto  # type: ignore[import-not-found, no-redef]
         from .ipv8.messaging.anonymization.community import TunnelCommunity  # type: ignore[import-not-found, no-redef]
         from .ipv8.messaging.anonymization.endpoint import TunnelEndpoint  # type: ignore[import-not-found, no-redef]
-        from .ipv8.messaging.anonymization.hidden_services import HiddenTunnelCommunity  # type: ignore[import-not-found, no-redef]
         from .ipv8.messaging.interfaces.dispatcher.endpoint import DispatcherEndpoint  # type: ignore[import-not-found, no-redef]
         from .ipv8.messaging.interfaces.udp.endpoint import UDPEndpoint  # type: ignore[import-not-found, no-redef]
         from .ipv8.overlay import Overlay  # type: ignore[import-not-found, no-redef]
@@ -70,7 +68,6 @@ else:
     _COMMUNITIES: dict[str, type[Community]] = {
         "AttestationCommunity": AttestationCommunity,
         "DiscoveryCommunity": DiscoveryCommunity,
-        "HiddenTunnelCommunity": HiddenTunnelCommunity,
         "IdentityCommunity": IdentityCommunity,
         "TunnelCommunity": TunnelCommunity,
         "DHTDiscoveryCommunity": DHTDiscoveryCommunity,
