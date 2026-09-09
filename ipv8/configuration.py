@@ -89,7 +89,7 @@ default: dict[Any, Any] = {
             "on_start": []
         },
         {
-            "class": "HiddenTunnelCommunity",
+            "class": "TunnelCommunity",
             "key": "anonymous id",
             "walkers": [
                 {
@@ -110,9 +110,7 @@ default: dict[Any, Any] = {
                 "max_traffic": 250 * 1024 * 1024,
                 "dht_lookup_interval": 30
             },
-            "on_start": [
-                ("build_tunnels", 1)
-            ]
+            "on_start": []
         },
         {
             "class": "DHTDiscoveryCommunity",
@@ -422,7 +420,7 @@ class ConfigBuilder:
 
          - "AttestationCommunity"
          - "DiscoveryCommunity"
-         - "HiddenTunnelCommunity"
+         - "TunnelCommunity"
          - "IdentityCommunity"
          - "TunnelCommunity"
          - "DHTDiscoveryCommunity"

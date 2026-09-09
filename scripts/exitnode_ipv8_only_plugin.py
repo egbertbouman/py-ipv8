@@ -67,12 +67,12 @@ class ExitnodeIPv8Service:
             for key in configuration["keys"]:
                 key["file"] = os.path.join(statedir, key["file"])
 
-        allowed_overlays = ["DHTDiscoveryCommunity", "DiscoveryCommunity", "HiddenTunnelCommunity"]
+        allowed_overlays = ["DHTDiscoveryCommunity", "DiscoveryCommunity", "TunnelCommunity"]
         configuration["overlays"] = [overlay for overlay in configuration["overlays"]
                                      if overlay["class"] in allowed_overlays]
 
         for overlay in configuration["overlays"]:
-            if overlay["class"] == "HiddenTunnelCommunity":
+            if overlay["class"] == "TunnelCommunity":
                 overlay["initialize"]["min_circuits"] = 0
                 overlay["initialize"]["max_circuits"] = 0
                 overlay["initialize"]["max_joined_circuits"] = 1000
