@@ -3,11 +3,18 @@ name: PR Validation Checker
 on:
   issue_comment:
     types: [created]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch name to validate on your fork'
+        required: true
+        default: 'master'
+        type: string
 
 jobs:
   pr_commented:
     name: Validate PR
-    if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, 'validate') }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.issue.pull_request && startsWith(github.event.comment.body, 'validate')) }}
     needs: set_pending_status
     strategy:
       matrix:
@@ -17,7 +24,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: refs/pull/${{ github.event.issue.number }}/head
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || format('refs/pull/{0}/head', github.event.issue.number) }}
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.version }}
@@ -43,7 +50,7 @@ jobs:
           key: cache_libsodium_dll
 
   set_pending_status:
-    if: ${{github.event.issue.pull_request && startsWith(github.event.comment.body, 'validate') }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.issue.pull_request && startsWith(github.event.comment.body, 'validate')) }}
     runs-on: ubuntu-latest
     outputs:
       actual_pull_head: ${{ steps.sha_share_step.outputs.actual_pull_head }}
@@ -51,16 +58,14 @@ jobs:
       - name: Retrieving commit
         shell: bash
         run: |
-          {
-            echo 'actual_pull_head<<EOF'
-            git ls-remote ${{ github.server_url }}/${{ github.repository }}/ refs/pull/${{ github.event.issue.number }}/head | grep -o "^\w*\b"
-            echo
-            echo EOF
-          } >> "$GITHUB_ENV"
+          REF="${{ github.event_name == 'workflow_dispatch' && format('refs/heads/{0}', inputs.branch) || format('refs/pull/{0}/head', github.event.issue.number) }}"
+          SHA=$(git ls-remote ${{ github.server_url }}/${{ github.repository }}/ "$REF" | grep -o "^\w*\b")
+          echo "actual_pull_head=$SHA" >> "$GITHUB_ENV"
       - name: Sharing commit SHA between jobs
         id: sha_share_step
         run: echo "actual_pull_head=${{ env.actual_pull_head }}" >> "$GITHUB_OUTPUT"
       - name: Set commit pending status
+        continue-on-error: true
         uses: guibranco/github-status-action-v2@v1.1.13
         with:
           authToken: ${{secrets.COMMIT_STATUS_TOKEN}}
@@ -71,11 +76,12 @@ jobs:
           target_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
   set_failure_status:
-    if: ${{failure() && github.event.issue.pull_request && startsWith(github.event.comment.body, 'validate') }}
+    if: ${{ failure() && (github.event_name == 'workflow_dispatch' || (github.event.issue.pull_request && startsWith(github.event.comment.body, 'validate'))) }}
     needs: [set_pending_status, pr_commented, validate_identity_tutorial, validate_documentation]
     runs-on: ubuntu-latest
     steps:
       - name: Set commit failed status
+        continue-on-error: true
         env:
           actual_pull_head: ${{needs.set_pending_status.outputs.actual_pull_head}}
         uses: guibranco/github-status-action-v2@v1.1.13
@@ -88,11 +94,12 @@ jobs:
           target_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
   set_success_status:
-    if: ${{!failure() && github.event.issue.pull_request && startsWith(github.event.comment.body, 'validate') }}
+    if: ${{ !failure() && (github.event_name == 'workflow_dispatch' || (github.event.issue.pull_request && startsWith(github.event.comment.body, 'validate'))) }}
     needs: [set_pending_status, pr_commented, validate_identity_tutorial, validate_documentation]
     runs-on: ubuntu-latest
     steps:
       - name: Set commit success status
+        continue-on-error: true
         env:
           actual_pull_head: ${{needs.set_pending_status.outputs.actual_pull_head}}
         uses: guibranco/github-status-action-v2@v1.1.13
@@ -106,13 +113,13 @@ jobs:
 
   validate_identity_tutorial:
     name: Validate identity tutorial
-    if: ${{github.event.issue.pull_request && startsWith(github.event.comment.body, 'validate') }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.issue.pull_request && startsWith(github.event.comment.body, 'validate')) }}
     needs: set_pending_status
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: refs/pull/${{ github.event.issue.number }}/head
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || format('refs/pull/{0}/head', github.event.issue.number) }}
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
@@ -130,13 +137,13 @@ jobs:
 
   validate_documentation:
     name: Validate documentation
-    if: ${{github.event.issue.pull_request && startsWith(github.event.comment.body, 'validate') }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.issue.pull_request && startsWith(github.event.comment.body, 'validate')) }}
     needs: set_pending_status
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: refs/pull/${{ github.event.issue.number }}/head
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || format('refs/pull/{0}/head', github.event.issue.number) }}
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
